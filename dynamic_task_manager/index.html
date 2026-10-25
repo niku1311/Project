@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Taskflow | Productivity Tracker</title><link rel="stylesheet" href="style.css"><script src="script.js" defer></script>
+</head>
+<body>
+<div class="layout">
+<aside class="sidebar"><a class="brand" href="#">✓ taskflow<span>.</span></a><p class="label">WORKSPACE</p>
+<button class="side active" data-filter="all">▦ All tasks <b id="allCount">0</b></button>
+<button class="side" data-filter="active">◷ Active <b id="activeCount">0</b></button>
+<button class="side" data-filter="completed">✓ Completed <b id="completedCount">0</b></button>
+<p class="label">CATEGORIES</p>
+<button class="side cat active" data-category="all">All categories</button><button class="side cat" data-category="Work">🔵 Work</button><button class="side cat" data-category="Personal">🟠 Personal</button><button class="side cat" data-category="Study">🟣 Study</button><button class="side cat" data-category="Other">🟢 Other</button>
+<div class="saved">▣ <div><b>Saved on this device</b><small>Tasks persist in this browser.</small></div></div><button class="clear" id="clearCompleted">Clear completed tasks</button></aside>
+<main>
+<header><div><small id="today"></small><h1 id="pageTitle">All tasks</h1></div><button class="theme" id="theme">☼</button></header>
+<section class="welcome"><small>A LITTLE PROGRESS EVERY DAY</small><h2>Make space for what<br><em>matters most.</em></h2><p>Plan your day, keep your focus, celebrate small wins.</p><div class="sun">✓</div></section>
+<section class="stats">
+<article><small>Total tasks</small><strong id="total">0</strong><span>Tasks in your workspace</span></article><article><small>Active</small><strong id="active">0</strong><span>Still on your list</span></article><article><small>Completed</small><strong id="completed">0</strong><span>Wins worth celebrating</span></article><article><small>Daily progress</small><strong id="percent">0%</strong><div class="track"><i id="bar"></i></div><span id="progressText">Your first win is waiting</span></article>
+</section>
+<section class="tasks">
+<div class="heading"><div><small>YOUR LIST</small><h2>Tasks <span id="shown">0</span></h2></div><button id="focusAdd" class="new">＋ New task</button></div>
+<form id="taskForm"><input id="title" maxlength="140" placeholder="What do you need to get done?" required aria-label="Task title"><div class="form-row"><select id="category" aria-label="Category"><option>Work</option><option>Personal</option><option>Study</option><option>Other</option></select><input id="dueDate" type="date" aria-label="Due date optional"><button class="add" type="submit">Add task ↗</button></div><small class="hint" id="hint">Press Enter to add a task. Due date is optional.</small></form>
+<div class="toolbar"><div class="pills"><button class="pill active" data-filter="all">All <span id="pillAll">0</span></button><button class="pill" data-filter="active">Active <span id="pillActive">0</span></button><button class="pill" data-filter="completed">Completed <span id="pillCompleted">0</span></button></div><input type="search" id="search" placeholder="⌕ Search tasks..." aria-label="Search tasks"></div>
+<div id="list" class="list" aria-live="polite"></div><div id="empty" class="empty"><div>✓</div><h3>Nothing on your list yet</h3><p>Add a task above and take the first step.</p><button id="emptyAdd">＋ Create your first task</button></div>
+<footer><span id="footerCount">Showing 0 tasks</span><span>● Changes save automatically</span></footer></section>
+<div class="bottom">Made for focused days ✦ <span>Taskflow · Your data stays in this browser</span></div>
+</main></div>
+<dialog id="editDialog"><form id="editForm"><div class="dialog-head"><h2>Edit task</h2><button type="button" id="closeEdit">×</button></div><label for="editTitle">Task name</label><input id="editTitle" maxlength="140" required><div class="edit-row"><div><label for="editCategory">Category</label><select id="editCategory"><option>Work</option><option>Personal</option><option>Study</option><option>Other</option></select></div><div><label for="editDue">Due date</label><input type="date" id="editDue"></div></div><div class="dialog-actions"><button type="button" id="cancelEdit">Cancel</button><button class="add" type="submit">Save changes ↗</button></div></form></dialog><div id="toast" role="status"></div>
+</body></html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkyCast | Live Weather Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: #f8fbff;
+      background: #10213a;
+    }
+    body {
+      min-height: 100vh;
+      padding: 34px 18px;
+      background: linear-gradient(135deg, #153b66 0%, #2876a8 48%, #83b9d4 100%);
+      background-attachment: fixed;
+      transition: background 0.7s ease;
+    }
+    body.sunny { background: linear-gradient(135deg, #f6a43a, #ed7651 52%, #7b6fc4); }
+    body.rainy { background: linear-gradient(135deg, #152d4c, #345b78 55%, #668ba0); }
+    body.cloudy { background: linear-gradient(135deg, #41566e, #71899c 55%, #a5b7c2); }
+    body.night { background: linear-gradient(135deg, #080f2b, #1b2e59 55%, #46557d); }
+
+    .container { width: min(100%, 980px); margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 28px; }
+    .brand { display: flex; align-items: center; gap: 11px; }
+    .brand-icon { font-size: 32px; }
+    .brand h1 { font-size: 23px; letter-spacing: .3px; }
+    .brand p { color: rgba(255,255,255,.72); font-size: 12px; margin-top: 3px; }
+    .local-label { color: rgba(255,255,255,.8); font-size: 13px; }
+
+    .panel {
+      background: rgba(8, 24, 46, .28);
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 24px;
+      box-shadow: 0 18px 55px rgba(5, 18, 38, .18);
+      backdrop-filter: blur(16px);
+    }
+    .search-panel { padding: 22px; margin-bottom: 20px; }
+    .search-panel h2 { font-size: 17px; margin-bottom: 13px; }
+    .search-row { display: flex; gap: 10px; }
+    input {
+      flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,.3);
+      border-radius: 12px; padding: 14px 16px; outline: none;
+      background: rgba(255,255,255,.95); color: #172b45; font-size: 15px;
+    }
+    input:focus { box-shadow: 0 0 0 3px rgba(255,255,255,.2); }
+    button {
+      border: 0; border-radius: 12px; padding: 0 22px; cursor: pointer;
+      background: #082b50; color: white; font-weight: 700; font-size: 14px;
+      transition: transform .2s, background .2s;
+    }
+    button:hover { background: #061f3b; transform: translateY(-1px); }
+    button:disabled { opacity: .65; cursor: wait; transform: none; }
+    .hint { color: rgba(255,255,255,.72); font-size: 12px; margin-top: 10px; }
+
+    .message { display: none; padding: 13px 16px; margin-bottom: 18px; border-radius: 12px; font-size: 14px; }
+    .message.error { display: block; background: rgba(125, 24, 34, .55); border: 1px solid rgba(255,180,180,.35); }
+    .message.info { display: block; background: rgba(10, 43, 75, .5); border: 1px solid rgba(255,255,255,.2); }
+    .loading { display: none; text-align: center; padding: 24px; color: white; }
+    .spinner { width: 34px; height: 34px; border: 4px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .weather-content { display: none; }
+    .current { padding: 28px; display: grid; grid-template-columns: 1.2fr .8fr; gap: 20px; align-items: center; }
+    .location { color: rgba(255,255,255,.82); font-size: 15px; }
+    .location strong { color: white; font-size: 25px; display: block; margin-bottom: 5px; }
+    .date { color: rgba(255,255,255,.72); font-size: 13px; margin-top: 5px; }
+    .temperature { font-size: clamp(62px, 10vw, 90px); line-height: 1; font-weight: 300; letter-spacing: -5px; margin: 22px 0 10px; }
+    .condition { font-size: 18px; text-transform: capitalize; }
+    .weather-art { text-align: center; }
+    .weather-art .icon { font-size: clamp(85px, 15vw, 135px); filter: drop-shadow(0 12px 15px rgba(0,0,0,.16)); }
+    .weather-art p { color: rgba(255,255,255,.8); font-size: 13px; margin-top: 8px; }
+
+    .section-title { font-size: 18px; margin: 22px 0 14px; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
+    .metric { padding: 18px; min-height: 112px; }
+    .metric .metric-icon { font-size: 21px; margin-bottom: 12px; }
+    .metric .metric-name { color: rgba(255,255,255,.7); font-size: 12px; }
+    .metric .metric-value { font-size: 20px; font-weight: 700; margin-top: 5px; }
+
+    .forecast-section { margin-top: 24px; }
+    .forecast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .forecast-card { padding: 17px 10px; text-align: center; }
+    .forecast-day { font-size: 13px; color: rgba(255,255,255,.82); }
+    .forecast-icon { font-size: 31px; margin: 13px 0; }
+    .forecast-condition { min-height: 30px; font-size: 11px; color: rgba(255,255,255,.72); text-transform: capitalize; }
+    .forecast-temps { font-size: 14px; font-weight: 700; margin-top: 9px; }
+    .forecast-temps span { color: rgba(255,255,255,.62); font-weight: 400; margin-left: 5px; }
+    footer { text-align: center; color: rgba(255,255,255,.65); font-size: 12px; margin: 28px 0 5px; }
+
+    @media (max-width: 650px) {
+      body { padding: 22px 13px; }
+      header { align-items: flex-start; }
+      .local-label { display: none; }
+      .search-panel { padding: 17px; }
+      .search-row { flex-direction: column; }
+      button { min-height: 47px; }
+      .current { grid-template-columns: 1fr; padding: 23px; text-align: center; }
+      .weather-art { grid-row: 1; }
+      .weather-art .icon { font-size: 88px; }
+      .temperature { margin-top: 15px; }
+      .metrics { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .metric { min-height: 100px; padding: 14px; }
+      .forecast-grid { grid-template-columns: repeat(2, 1fr); }
+      .forecast-card:last-child { grid-column: span 2; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header>
+      <div class="brand">
+        <div class="brand-icon">🌤️</div>
+        <div><h1>SkyCast</h1><p>LIVE WEATHER DASHBOARD</p></div>
+      </div>
+      <div class="local-label">Real-time weather around the world</div>
+    </header>
+
+    <section class="panel search-panel">
+      <h2>Check weather anywhere</h2>
+      <form class="search-row" id="searchForm">
+        <input id="cityInput" type="text" placeholder="Enter a city (e.g. Bengaluru, London)" aria-label="City name" required />
+        <button id="searchButton" type="submit">Search Weather</button>
+      </form>
+      <p class="hint">Enter a city name to see current conditions and the 5-day forecast.</p>
+    </section>
+
+    <div id="message" class="message" role="alert"></div>
+    <div id="loading" class="loading" aria-live="polite">
+      <div class="spinner"></div>
+      <p>Fetching live weather data...</p>
+    </div>
+
+    <section id="weatherContent" class="weather-content">
+      <section class="panel current">
+        <div>
+          <div class="location"><strong id="cityName">--</strong><span id="countryName"></span></div>
+          <div class="date" id="currentDate"></div>
+          <div class="temperature"><span id="temperature">--</span><span style="font-size:.42em;vertical-align:top;letter-spacing:0">°C</span></div>
+          <div class="condition" id="condition">--</div>
+        </div>
+        <div class="weather-art">
+          <div class="icon" id="weatherIcon">🌤️</div>
+          <p id="feelsLike">Feels like --°C</p>
+        </div>
+      </section>
+
+      <section class="metrics">
+        <article class="panel metric"><div class="metric-icon">💧</div><div class="metric-name">Humidity</div><div class="metric-value" id="humidity">--%</div></article>
+        <article class="panel metric"><div class="metric-icon">💨</div><div class="metric-name">Wind speed</div><div class="metric-value" id="wind">-- m/s</div></article>
+        <article class="panel metric"><div class="metric-icon">🌡️</div><div class="metric-name">Pressure</div><div class="metric-value" id="pressure">-- hPa</div></article>
+        <article class="panel metric"><div class="metric-icon">☁️</div><div class="metric-name">Cloudiness</div><div class="metric-value" id="clouds">--%</div></article>
+      </section>
+
+      <section class="forecast-section">
+        <h2 class="section-title">5-Day Forecast</h2>
+        <div class="forecast-grid" id="forecastGrid"></div>
+      </section>
+    </section>
+
+    <footer>Weather data provided by OpenWeatherMap · SkyCast Weather Dashboard</footer>
+  </main>
+
+  <script>
+    // 1. Replace this value with your OpenWeatherMap API key.
+    const API_KEY = "b4b938e050ce43857381bccbd0f14919";
+
+    const form = document.getElementById("searchForm");
+    const cityInput = document.getElementById("cityInput");
+    const searchButton = document.getElementById("searchButton");
+    const loading = document.getElementById("loading");
+    const message = document.getElementById("message");
+    const weatherContent = document.getElementById("weatherContent");
+
+    function showMessage(text, type = "error") {
+      message.textContent = text;
+      message.className = `message ${type}`;
+    }
+
+    function clearMessage() {
+      message.textContent = "";
+      message.className = "message";
+    }
+
+    function setLoading(isLoading) {
+      loading.style.display = isLoading ? "block" : "none";
+      searchButton.disabled = isLoading;
+      searchButton.textContent = isLoading ? "Searching..." : "Search Weather";
+    }
+
+    function weatherEmoji(main, iconCode) {
+      if (iconCode && iconCode.endsWith("n")) return "🌙";
+      const type = (main || "").toLowerCase();
+      if (type.includes("thunder")) return "⛈️";
+      if (type.includes("drizzle") || type.includes("rain")) return "🌧️";
+      if (type.includes("snow")) return "❄️";
+      if (type.includes("mist") || type.includes("fog") || type.includes("haze") || type.includes("smoke")) return "🌫️";
+      if (type.includes("cloud")) return "☁️";
+      if (type.includes("clear")) return "☀️";
+      return "🌤️";
+    }
+
+    function setBackground(main, iconCode) {
+      document.body.classList.remove("sunny", "rainy", "cloudy", "night");
+      if (iconCode && iconCode.endsWith("n")) {
+        document.body.classList.add("night");
+        return;
+      }
+      const type = (main || "").toLowerCase();
+      if (type.includes("rain") || type.includes("drizzle") || type.includes("thunder")) {
+        document.body.classList.add("rainy");
+      } else if (type.includes("cloud") || type.includes("mist") || type.includes("fog") || type.includes("haze")) {
+        document.body.classList.add("cloudy");
+      } else if (type.includes("clear")) {
+        document.body.classList.add("sunny");
+      }
+    }
+
+    function formatDay(dateString) {
+      return new Date(dateString).toLocaleDateString(undefined, { weekday: "short" });
+    }
+
+    function renderForecast(forecastList) {
+      // OpenWeatherMap returns readings every 3 hours. Group them by local date.
+      const days = {};
+      forecastList.forEach(item => {
+        const date = item.dt_txt.split(" ")[0];
+        if (!days[date]) days[date] = [];
+        days[date].push(item);
+      });
+
+      const dates = Object.keys(days).sort().slice(0, 5);
+      const grid = document.getElementById("forecastGrid");
+      grid.innerHTML = "";
+
+      dates.forEach(date => {
+        const entries = days[date];
+        const midday = entries.find(entry => entry.dt_txt.includes("12:00:00")) || entries[Math.floor(entries.length / 2)];
+        const temps = entries.map(entry => entry.main.temp);
+        const max = Math.round(Math.max(...temps));
+        const min = Math.round(Math.min(...temps));
+        const icon = weatherEmoji(midday.weather[0].main, midday.weather[0].icon);
+
+        const card = document.createElement("article");
+        card.className = "panel forecast-card";
+        card.innerHTML = `
+          <div class="forecast-day">${formatDay(date)}</div>
+          <div class="forecast-icon">${icon}</div>
+          <div class="forecast-condition">${midday.weather[0].description}</div>
+          <div class="forecast-temps">${max}° <span>${min}°</span></div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    async function getWeather(city) {
+      if (!API_KEY || API_KEY === "YOUR_OPENWEATHERMAP_API_KEY") {
+        showMessage("Please add your OpenWeatherMap API key in the API_KEY variable inside index.html.");
+        return;
+      }
+
+      clearMessage();
+      weatherContent.style.display = "none";
+      setLoading(true);
+
+      try {
+        const encodedCity = encodeURIComponent(city.trim());
+        const currentUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodedCity}&appid=${API_KEY}&units=metric`;
+        const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${encodedCity}&appid=${API_KEY}&units=metric`;
+
+        const [currentResponse, forecastResponse] = await Promise.all([
+          fetch(currentUrl),
+          fetch(forecastUrl)
+        ]);
+
+        const currentData = await currentResponse.json();
+        if (!currentResponse.ok) {
+          if (currentResponse.status === 404) throw new Error("City not found. Please check the spelling and try again.");
+          if (currentResponse.status === 401) throw new Error("Invalid API key. Check your OpenWeatherMap API key.");
+          throw new Error(currentData.message || "Unable to retrieve weather data.");
+        }
+
+        const forecastData = await forecastResponse.json();
+        if (!forecastResponse.ok) {
+          if (forecastResponse.status === 401) throw new Error("Invalid API key. Check your OpenWeatherMap API key.");
+          throw new Error(forecastData.message || "Unable to retrieve the 5-day forecast.");
+        }
+
+        displayCurrentWeather(currentData);
+        renderForecast(forecastData.list);
+        weatherContent.style.display = "block";
+      } catch (error) {
+        showMessage(error.message || "Network error. Please check your internet connection and try again.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function displayCurrentWeather(data) {
+      const weather = data.weather[0];
+      document.getElementById("cityName").textContent = data.name;
+      document.getElementById("countryName").textContent = ` ${data.sys.country}`;
+      document.getElementById("currentDate").textContent =
+        new Date().toLocaleString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      document.getElementById("temperature").textContent = Math.round(data.main.temp);
+      document.getElementById("condition").textContent = weather.description;
+      document.getElementById("weatherIcon").textContent = weatherEmoji(weather.main, weather.icon);
+      document.getElementById("feelsLike").textContent = `Feels like ${Math.round(data.main.feels_like)}°C`;
+      document.getElementById("humidity").textContent = `${data.main.humidity}%`;
+      document.getElementById("wind").textContent = `${data.wind.speed} m/s`;
+      document.getElementById("pressure").textContent = `${data.main.pressure} hPa`;
+      document.getElementById("clouds").textContent = `${data.clouds.all}%`;
+      setBackground(weather.main, weather.icon);
+    }
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      const city = cityInput.value.trim();
+      if (!city) {
+        showMessage("Please enter a city name.");
+        return;
+      }
+      getWeather(city);
+    });
+
+    // Load a sample city on startup after the API key has been configured.
+    // Change Bengaluru to any city you prefer.
+    if (API_KEY !== "YOUR_OPENWEATHERMAP_API_KEY") {
+      cityInput.value = "Bengaluru";
+      getWeather("Bengaluru");
+    } else {
+      showMessage("Setup required: add your free OpenWeatherMap API key in the API_KEY variable to enable live weather.", "info");
+    }
+  </script>
+</body>
+</html>
